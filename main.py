@@ -5,8 +5,10 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
+import os
 
 file_path = '''data\\Arjun, the nature lover.pdf'''
+db_dir = '''./chroma_langchain_db'''
 
 def load_document():
     try:
@@ -45,32 +47,33 @@ def chunk_split(documents):
     except Exception as e:
         print("Exception occured while splitting")
 
-def embed_data(data):
-    try:
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs = {'device': 'cpu'})
-        embed_text = embeddings.embed_documents(data)
-        # print(len(embed_text))
-        return embed_text
-    except Exception as e:
-        print("Exception occured while embedding \n")
 
 def embed_store(documents, collection_name="test_collection"):
     try:
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs = {'device': 'cpu'})
-        vector_store = Chroma(
-            collection_name=collection_name,
-            embedding_function=embeddings,
-            persist_directory="./chroma_langchain_db"
-        )
+        if not os.path.exists(os.path.join(db_dir, "index")):
+            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs = {'device': 'cpu'})
+            vector_store = Chroma(
+                collection_name=collection_name,
+                embedding_function=embeddings,
+                persist_directory="./chroma_langchain_db"
+            )
 
-        vector_store.add_documents(documents=documents)
+            vector_store.add_documents(documents=documents)
+            return vector_store
+        else:
+            vector_store = Chroma(
+                collection_name=collection_name,
+                embedding_function=embeddings,
+                persist_directory="./chroma_langchain_db"
+            )
+        
         return vector_store
     except Exception as e:
         print("Exception occured while embedding and storing")
 
 def retrieve_docs_db(vector_store, question):
     try:
-        retriever = vector_store.as_retriever(search_kwargs={'k':3})
+        retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={'k':3})
         fetched_docs = retriever.invoke(question)
         # for i, data in enumerate( fetched_docs):
         #     print(f"Document {i}:")
@@ -99,14 +102,15 @@ def main():
     splitted_docs = chunk_split(documents)
     vector_store = embed_store(splitted_docs)
     questions = ["What was Arjun known for in the village?", 
-                 "What did Arjun find in the abundunt hut?",
+                 "What did Arjun find in the abandoned hut?",
+                 "What was the name of the book that Arjun found in the abandoned hut?",
                  "What did Arjun do after learning from the book?", 
                  "How did the village change due to Arjun's efforts?",
                  "What lesson did Arjun teach the villagers?"]
-    for question in questions:
+    for index, question in enumerate(questions):
         relevant_docs = retrieve_docs_db(vector_store, question)
         answer = response_from_llm(relevant_docs, question)
-        print("Question: " + question)
+        print(f"Question {index+1}: " + question)
         print("Answer: " + answer.content)
         print("\n\n")
     
