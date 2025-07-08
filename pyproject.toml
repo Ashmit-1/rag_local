@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "chromadb>=1.0.15",
+    "huggingface-hub[hf-xet]>=0.33.2",
     "langchain>=0.3.26",
+    "langchain-chroma>=0.2.4",
     "langchain-community>=0.3.27",
+    "langchain-huggingface>=0.3.0",
     "pypdf>=5.7.0",
     "sentence-transformers>=5.0.0",
 ]
