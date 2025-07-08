@@ -6,16 +6,21 @@ from langchain_core.documents import Document
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 import os
+import shutil
+import sys
 
-file_path = '''data\\Arjun, the nature lover.pdf'''
+file_path = '''data'''
 db_dir = '''./chroma_langchain_db'''
+recreate = True
 
 def load_document():
     try:
-        loader = PyPDFLoader(file_path=file_path)
         pages = []
-        for page in loader.lazy_load():
-            pages.append(page)
+        for filename in os.listdir(file_path):
+            if filename.endswith(".pdf"):
+                loader = PyPDFLoader(file_path=os.path.join(file_path, filename))
+                for page in loader.lazy_load():
+                    pages.append(page)
         # print(f"{pages[0].metadata}\n")
         # print(pages[0].page_content)   
         return pages
@@ -25,7 +30,7 @@ def load_document():
 def chunk_split(documents):
     try:
         texts = []
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=100)
         id_count = 0
         for i in documents:
             text = text_splitter.split_text(i.page_content)
@@ -48,10 +53,15 @@ def chunk_split(documents):
         print("Exception occured while splitting")
 
 
-def embed_store(documents, collection_name="test_collection"):
+def embed_store(documents, collection_name="test_collection", model_name = "all-mpnet-base-v2"):
     try:
-        if not os.path.exists(os.path.join(db_dir, "index")):
-            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs = {'device': 'cpu'})
+        embeddings = HuggingFaceEmbeddings(
+            model_name=f"sentence-transformers/{model_name}", 
+            model_kwargs = {'device': 'cpu'})
+        if not os.path.exists(db_dir) or recreate:
+            print("Creating new database.....\n\n")
+            if os.path.exists(db_dir):
+                shutil.rmtree(db_dir)
             vector_store = Chroma(
                 collection_name=collection_name,
                 embedding_function=embeddings,
@@ -59,8 +69,8 @@ def embed_store(documents, collection_name="test_collection"):
             )
 
             vector_store.add_documents(documents=documents)
-            return vector_store
         else:
+            print("Old database found !!! \n\n")
             vector_store = Chroma(
                 collection_name=collection_name,
                 embedding_function=embeddings,
@@ -69,7 +79,8 @@ def embed_store(documents, collection_name="test_collection"):
         
         return vector_store
     except Exception as e:
-        print("Exception occured while embedding and storing")
+        print("Exception occured while embedding and storing. " + str(e))
+        sys.exit(1)
 
 def retrieve_docs_db(vector_store, question):
     try:
@@ -82,6 +93,7 @@ def retrieve_docs_db(vector_store, question):
         return fetched_docs
     except Exception as e:
         print("Exception during retrieval of related docs")
+        sys.exit(1)
 
 def response_from_llm(relevant_docs, question):
     try:
@@ -96,23 +108,40 @@ def response_from_llm(relevant_docs, question):
         return response
     except Exception as e:
         print("Exception in getting response from llm")
+        sys.exit(1)
 
 def main():
-    documents = load_document()
-    splitted_docs = chunk_split(documents)
+    if not os.path.exists(db_dir) or recreate:
+        documents = load_document()
+        splitted_docs = chunk_split(documents)
+    else:
+        splitted_docs=None
+
+        
     vector_store = embed_store(splitted_docs)
+
     questions = ["What was Arjun known for in the village?", 
                  "What did Arjun find in the abandoned hut?",
                  "What was the name of the book that Arjun found in the abandoned hut?",
                  "What did Arjun do after learning from the book?", 
                  "How did the village change due to Arjun's efforts?",
-                 "What lesson did Arjun teach the villagers?"]
+                 "What lesson did Arjun teach the villagers?",
+                 "Who discovered the book?"
+                 ]
     for index, question in enumerate(questions):
         relevant_docs = retrieve_docs_db(vector_store, question)
         answer = response_from_llm(relevant_docs, question)
         print(f"Question {index+1}: " + question)
         print("Answer: " + answer.content)
         print("\n\n")
+
+    # while True:
+    #     question = input("Enter the question: ")
+    #     relevant_docs = retrieve_docs_db(vector_store, question)
+    #     answer = response_from_llm(relevant_docs, question)
+    #     print("Answer: " + answer.content)
+    #     print("\n\n")
+
     
 
 
