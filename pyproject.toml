@@ -1,0 +1,12 @@
+[project]
+name = "rag-local"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb>=1.0.15",
+    "langchain>=0.3.26",
+    "pypdf>=5.7.0",
+    "sentence-transformers>=5.0.0",
+]
