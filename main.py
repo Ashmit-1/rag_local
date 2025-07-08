@@ -1,6 +1,7 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+# from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import ChatOllama
@@ -25,7 +26,8 @@ def load_document():
         # print(pages[0].page_content)   
         return pages
     except Exception as e:
-        print("Exception occured while loading document")
+        print("Exception occured while loading document. " + str(e))
+        sys.exit(1)
 
 def chunk_split(documents):
     try:
@@ -50,14 +52,16 @@ def chunk_split(documents):
         #     print("\n\n\n\n")
         return texts
     except Exception as e:
-        print("Exception occured while splitting")
+        print("Exception occured while splitting. " + str(e))
+        sys.exit(1)
 
 
-def embed_store(documents, collection_name="test_collection", model_name = "all-mpnet-base-v2"):
+def embed_store(documents, collection_name="test_collection", model_name = "bge-small-en-v1.5"):
     try:
         embeddings = HuggingFaceEmbeddings(
-            model_name=f"sentence-transformers/{model_name}", 
-            model_kwargs = {'device': 'cpu'})
+            model_name=f"BAAI/{model_name}", 
+            model_kwargs = {'device': 'cpu'},
+            encode_kwargs={"normalize_embeddings": True})
         if not os.path.exists(db_dir) or recreate:
             print("Creating new database.....\n\n")
             if os.path.exists(db_dir):
@@ -84,7 +88,7 @@ def embed_store(documents, collection_name="test_collection", model_name = "all-
 
 def retrieve_docs_db(vector_store, question):
     try:
-        retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={'k':3})
+        retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={'k':5})
         fetched_docs = retriever.invoke(question)
         # for i, data in enumerate( fetched_docs):
         #     print(f"Document {i}:")
@@ -126,7 +130,11 @@ def main():
                  "What did Arjun do after learning from the book?", 
                  "How did the village change due to Arjun's efforts?",
                  "What lesson did Arjun teach the villagers?",
-                 "Who discovered the book?"
+                 "What made Master Elric\'s clocks special?",
+                 "Why did Elric take Ravi in?",
+                 "What was unique about the hidden clock?",
+                 "What did Ravi use to complete the clock?",
+                 "What did the clock reveal when it was completed?"                
                  ]
     for index, question in enumerate(questions):
         relevant_docs = retrieve_docs_db(vector_store, question)
