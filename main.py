@@ -14,12 +14,18 @@ file_path = '''data'''
 db_dir = '''./chroma_langchain_db'''
 recreate = True
 
-def load_document():
+def load_document(file_path):
     try:
         pages = []
-        for filename in os.listdir(file_path):
-            if filename.endswith(".pdf"):
-                loader = PyPDFLoader(file_path=os.path.join(file_path, filename))
+        if os.path.isdir(file_path):
+            for filename in os.listdir(file_path):
+                if filename.endswith(".pdf"):
+                    loader = PyPDFLoader(file_path=os.path.join(file_path, filename))
+                    for page in loader.lazy_load():
+                        pages.append(page)
+        elif os.path.isfile(file_path):
+            if file_path.endswith(".pdf"):
+                loader = PyPDFLoader(file_path=file_path)
                 for page in loader.lazy_load():
                     pages.append(page)
         # print(f"{pages[0].metadata}\n")
@@ -143,7 +149,7 @@ def response_from_llm(relevant_docs, question):
 
 def main():
     if not os.path.exists(db_dir) or recreate:
-        documents = load_document()
+        documents = load_document(file_path)
         splitted_docs = chunk_split(documents)
     else:
         splitted_docs=None
