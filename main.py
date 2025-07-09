@@ -1,7 +1,6 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-# from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import ChatOllama
@@ -9,6 +8,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 import os
 import shutil
 import sys
+from uuid import uuid4
 
 file_path = '''data'''
 db_dir = '''./chroma_langchain_db'''
@@ -33,21 +33,19 @@ def chunk_split(documents):
     try:
         texts = []
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=100)
-        id_count = 0
         for i in documents:
             text = text_splitter.split_text(i.page_content)
             for j in text:
                 doc = Document(
                     page_content=j,
                     metadata = i.metadata,
-                    id=id_count
+                    id=str(uuid4())
                 )
-                id_count = id_count+1
                 texts.append(doc)
         # for docs in texts:
         #     print("ID: " + docs.id)
         #     print("Metadata: ", end=": ")
-        #     print(docs.metadata)
+        #     print(docs.metadata["source"])
         #     print("Content: " + docs.page_content)
         #     print("\n\n\n\n")
         return texts
@@ -72,7 +70,8 @@ def embed_store(documents, collection_name="test_collection", model_name = "bge-
                 persist_directory="./chroma_langchain_db"
             )
 
-            vector_store.add_documents(documents=documents)
+            uuids = [str(uuid4()) for _ in range(len(documents))]
+            vector_store.add_documents(documents=documents, ids=uuids)
         else:
             print("Old database found !!! \n\n")
             vector_store = Chroma(
@@ -84,6 +83,34 @@ def embed_store(documents, collection_name="test_collection", model_name = "bge-
         return vector_store
     except Exception as e:
         print("Exception occured while embedding and storing. " + str(e))
+        sys.exit(1)
+
+def auto_sync_db(vector_store):
+    try:
+        data_dir_set = set()
+        database_set = set()
+
+        for filename in os.listdir(file_path):
+            if filename.endswith(".pdf"):
+                data_dir_set.add(filename)
+        
+        docs = vector_store.get()
+        source_id_dict = {}
+        for index in range(len(docs["ids"])):
+            database_set.add(docs["metadatas"][index]["source"])
+            source_id_dict.setdefault(docs["metadatas"][index]["source"], []).append(docs["ids"][index])
+            # print("Id: " + docs["ids"][index])
+            # print("Source: " + docs["metadatas"][index]["source"])
+            # print("Author: " + docs["metadatas"][index]["author"])
+            # print("Content: " + docs["documents"][index])
+            # print("\n\n" + "*" * 100)
+        # for i in source_id_dict:
+        #     print(f"{i} : {source_id_dict[i]}\n\n")
+
+        sys.exit(1)
+        
+    except Exception as e:
+        print("Exception occured while smart sync. " + str(e))
         sys.exit(1)
 
 def retrieve_docs_db(vector_store, question):
@@ -123,6 +150,7 @@ def main():
 
         
     vector_store = embed_store(splitted_docs)
+    auto_sync_db(vector_store)
 
     questions = ["What was Arjun known for in the village?", 
                  "What did Arjun find in the abandoned hut?",
