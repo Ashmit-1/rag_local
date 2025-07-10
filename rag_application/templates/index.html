@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chat Interface</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>RAG Chat Assistant</h1>
+    </div>
+
+    <div class="chat-container">
+        <div class="messages-area" id="messagesArea">
+            <div class="message assistant">
+                <p>Hello! I'm your RAG assistant. You can ask me questions and upload files to expand my knowledge base
+                    using the + button below.</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="file-list" id="fileList"></div>
+            <div class="upload-progress" id="uploadProgress"></div>
+
+            <div class="input-container">
+                <textarea class="text-input" id="textInput" placeholder="Type your message here..." rows="1"></textarea>
+
+                <div class="action-buttons">
+                    <button class="btn" id="addFileBtn" title="Add files to database">
+                        <span class="plus-icon">+</span>
+                    </button>
+                    <button class="btn" id="sendBtn" title="Send message">
+                        <span class="send-icon">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <input type="file" id="fileInput" class="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
