@@ -1,10 +1,13 @@
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
+from markitdown import MarkItDown
+import tabula
 import os
 import shutil
 import sys
@@ -14,18 +17,41 @@ file_path = '''data'''
 db_dir = '''./chroma_langchain_db'''
 recreate = False
 
+
+
+def convert_to_markdown(file_path):
+    try:
+        md = MarkItDown()
+        for filename in os.listdir(file_path):
+            if filename.endswith(".pdf"):
+                if(not os.path.exists(os.path.join(file_path, (filename[:-4] + ".md")))):
+                    markdown_file = md.convert(os.path.join(file_path, filename))
+                    markdown_text = markdown_file.text_content
+                    tables = tabula.read_pdf(os.path.join(file_path, filename), pages='all', multiple_tables=True)
+                    for i, table in enumerate(tables):
+                        markdown_table = table.to_markdown(index=False)
+                        print(markdown_table)
+                        markdown_text += f"### Table {i + 1}\n\n{markdown_table}\n\n"
+
+                    with open(os.path.join(os.path.join(file_path, (filename[:-4] + ".md"))), "w", encoding="utf-8") as f:
+                        f.write(markdown_text)
+
+    except Exception as e:
+        print("Exception occured while converting to mark down files." + str(e))
+        sys.exit(1);
+
 def load_document(file_path):
     try:
         pages = []
         if os.path.isdir(file_path):
             for filename in os.listdir(file_path):
-                if filename.endswith(".pdf"):
-                    loader = PyPDFLoader(file_path=os.path.join(file_path, filename))
+                if filename.endswith(".md"):
+                    loader = TextLoader(file_path=os.path.join(file_path, filename))
                     for page in loader.lazy_load():
                         pages.append(page)
         elif os.path.isfile(file_path):
-            if file_path.endswith(".pdf"):
-                loader = PyPDFLoader(file_path=file_path)
+            if file_path.endswith(".md"):
+                loader = TextLoader(file_path=file_path)
                 for page in loader.lazy_load():
                     pages.append(page)
         # print(f"{pages[0].metadata}\n")
@@ -99,7 +125,7 @@ def auto_sync_db(vector_store):
         ### this is for getting the files which are there in the directory
         data_dir_set = set()
         for filename in os.listdir(file_path):
-            if filename.endswith(".pdf"):
+            if filename.endswith(".md"):
                 data_dir_set.add(os.path.join(file_path, filename))
         
         ### this is for getting the files already present in the database
@@ -178,6 +204,7 @@ def response_from_llm(relevant_docs, questions):
         sys.exit(1)
 
 def main():
+    convert_to_markdown(file_path)
     vector_store = embed_store()
     auto_sync_db(vector_store)
 
