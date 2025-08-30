@@ -181,23 +181,30 @@ def main():
     vector_store = embed_store()
     auto_sync_db(vector_store)
 
-    questions = ["What was Arjun known for in the village?", 
-                 "What did Arjun find in the abandoned hut?",
-                 "What was the name of the book that Arjun found in the abandoned hut?",
-                 "What did Arjun do after learning from the book?", 
-                 "How did the village change due to Arjun's efforts?",
-                 "What lesson did Arjun teach the villagers?",
-                 "What made Master Elric\'s clocks special?",
-                 "Why did Elric take Ravi in?",
-                 "What was unique about the hidden clock?",
-                 "What did Ravi use to complete the clock?",
-                 "What did the clock reveal when it was completed?"                
-                 ]
-    for index, question in enumerate(questions):
-        relevant_docs = retrieve_docs_db(vector_store, question)
-        answer = response_from_llm(relevant_docs, question)
-        print(f"Question {index+1}: " + question)
-        print("Answer: " + answer.content)
+    # questions = ["What was Arjun known for in the village?", 
+    #              "What did Arjun find in the abandoned hut?",
+    #              "What was the name of the book that Arjun found in the abandoned hut?",
+    #              "What did Arjun do after learning from the book?", 
+    #              "How did the village change due to Arjun's efforts?",
+    #              "What lesson did Arjun teach the villagers?",
+    #              "What made Master Elric\'s clocks special?",
+    #              "Why did Elric take Ravi in?",
+    #              "What was unique about the hidden clock?",
+    #              "What did Ravi use to complete the clock?",
+    #              "What did the clock reveal when it was completed?"                
+    #              ]
+    # for index, question in enumerate(questions):
+    #     relevant_docs = retrieve_docs_db(vector_store, question)
+    #     answer = response_from_llm(relevant_docs, question)
+    #     print(f"Question {index+1}: " + question)
+    #     print("Answer: " + answer.content)
+    #     print("\n\n")
+
+    while True:
+        proshno = input("Ask a question: ")
+        relevant_docs = retrieve_docs_db(vector_store, proshno)
+        ans = response_from_llm(relevant_docs, proshno)
+        print(f"Answer: {ans.content}")
         print("\n\n")
 
     # while True:
