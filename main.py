@@ -190,7 +190,7 @@ def retrieve_docs_db(vector_store, question):
 
 def response_from_llm(relevant_docs, questions):
     try:
-        llm = ChatOllama(model="gemma3:1b")
+        llm = ChatOllama(model="phi4-mini")
         system_prompt = "You are a question-answer bot. You have one simple job, you need to answer to questions  based on the following context. Read the whole context understand it and then give a modular answer with rephrasing if needed keeping the question asked as the focus. Context: {context}.\n\n\n\n Special Instructions: Remember your answer should be accurate and it should be to the point to the question. If you do not find the answer in the context provided tell that you don't know the answer as it is not present in the context. "
 
         context_str = "".join(d.page_content for d in relevant_docs)
