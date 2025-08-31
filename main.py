@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 from uuid import uuid4
+import subprocess
 
 file_path = '''data'''
 db_dir = '''./chroma_langchain_db'''
@@ -230,7 +231,9 @@ def main():
     print("Start asking questions. Type \'exit\' to quit the program.")
     while True:
         proshno = input("Ask a question: ")
-        if proshno == "exit": break
+        if proshno == "exit": 
+            subprocess.run(['ollama','stop','phi4-mini'])
+            break
         relevant_docs = retrieve_docs_db(vector_store, proshno)
         ans = response_from_llm(relevant_docs, proshno)
         print(f"Answer: {ans.content}")
