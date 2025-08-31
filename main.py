@@ -191,7 +191,7 @@ def retrieve_docs_db(vector_store, question):
 def response_from_llm(relevant_docs, questions):
     try:
         llm = ChatOllama(model="phi4-mini")
-        system_prompt = "You are a question-answer bot. You have one simple job, you need to answer to questions  based on the following context. Read the whole context understand it and then give a modular answer with rephrasing if needed keeping the question asked as the focus. Context: {context}.\n\n\n\n Special Instructions: Remember your answer should be accurate and it should be to the point to the question. If you do not find the answer in the context provided tell that you don't know the answer as it is not present in the context. "
+        system_prompt = "You are a question-answer bot. You have one simple job, you need to answer to questions  based on the following context. Read the whole context understand it and then give a modular answer with rephrasing if needed keeping the question asked as the focus. Context: {context}.\n\n\n\n Special Instructions: Remember your answer should be accurate and it should be to the point to the question. Try to answer in a point wise fashion so that the responses becomes more human readable and comprehendable. If you do not find the answer in the context provided tell that you don't know the answer as it is not present in the context. Follow these rules but do not include any of this instruction in the response."
 
         context_str = "".join(d.page_content for d in relevant_docs)
         contextual_prompt = system_prompt.format(context=context_str)
@@ -227,6 +227,7 @@ def main():
     #     print("Answer: " + answer.content)
     #     print("\n\n")
 
+    print("Start asking questions. Type \'exit\' to quit the program.")
     while True:
         proshno = input("Ask a question: ")
         if proshno == "exit": break
