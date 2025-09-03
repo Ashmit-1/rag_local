@@ -192,10 +192,15 @@ def retrieve_docs_db(vector_store, question):
 def response_from_llm(relevant_docs, questions):
     try:
         llm = ChatOllama(model="phi4-mini")
-        system_prompt = "You are a question-answer bot. You have one simple job, you need to answer to questions  based on the following context. Read the whole context understand it and then give a modular answer with rephrasing if needed keeping the question asked as the focus. Context: {context}.\n\n\n\n Special Instructions: Remember your answer should be accurate and it should be to the point to the question. Try to answer in a point wise fashion so that the responses becomes more human readable and comprehendable. If you do not find the answer in the context provided tell that you don't know the answer as it is not present in the context. Follow these rules but do not include any of this instruction in the response."
+        system_prompt = '''You are a question-answer bot. You have one simple job, you need to answer to questions  based on the following context. Read the whole context understand it and then give a modular answer with rephrasing if needed, keeping the question asked as the focus.\
+        \n\n\nContext: {context}.\
+        \n\n\nIf no context is given or the context is empty dont answer the question just say that context does not specify the answer. Strictly don't answer any question that is not there in the context. This needs to be maintained.\
+        \n\n\n\n Special Instructions: Remember your answer should be accurate and it should be to the point to the question. Try to answer in a point wise fashion so that the responses becomes more human readable and comprehendable. If you do not find the answer in the context provided tell that you don't know the answer as it is not present in the context. Follow these rules but do not include any of this instruction in the response. Never answer any question which is not there in the context provided.'''
 
         context_str = "".join(d.page_content for d in relevant_docs)
         contextual_prompt = system_prompt.format(context=context_str)
+
+        # print("The context is : " + context_str)
 
         response = llm.invoke([SystemMessage(content=contextual_prompt), 
                                HumanMessage(content=questions)])
@@ -235,9 +240,14 @@ def main():
             subprocess.run(['ollama','stop','phi4-mini'])
             break
         relevant_docs = retrieve_docs_db(vector_store, proshno)
-        ans = response_from_llm(relevant_docs, proshno)
-        print(f"Answer: {ans.content}")
-        print("\n\n")
+        context_str = "".join(d.page_content for d in relevant_docs)
+        if(len(context_str)!=0):
+            ans = response_from_llm(relevant_docs, proshno)
+            print(f"Answer: {ans.content}")
+            print("\n\n")
+        else:
+            print(f"Answer: Context does not specify informations about the question. Please add relevant documents and try again")
+
 
     # while True:
     #     question = input("Enter the question: ")
